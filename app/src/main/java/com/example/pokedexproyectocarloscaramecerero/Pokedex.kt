@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -24,6 +27,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ScaffoldDefaults.contentWindowInsets
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +46,10 @@ import androidx.compose.ui.unit.sp
 import com.example.pokedexproyectocarloscaramecerero.ui.theme.listaPokemon
 
 @Composable
+/**
+ * Composable principal que construye la interfaz de la Pokédex.
+ * Gestiona el estado de la vista seleccionada (columna, grid o sticky header) y actualiza la UI en consecuencia.
+ */
 fun Pokedex() {
 
     // ESTADO QUE CAMBIA LA VISTA
@@ -54,7 +62,7 @@ fun Pokedex() {
         PokedexView.STICKY -> Color(0xFF8000FF) // morado
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding() ) {
 
         // TOP BAR DINÁMICO
         Box(
@@ -156,8 +164,9 @@ fun PokedexGrid(){
 /**
  * Aqui deberia de hacer lo siguiente:
  *
- * Ordenar las cards en sticky headers segun el tipo, si los pokemon tienen doble tipo estos estaran en ambos headers, si el pokemon es Multitipo este estará en todos los
- * headers
+ * Ordenar las cards en sticky headers según el tipo.
+ * Si un Pokémon tiene dos tipos, aparecerá en las secciones de ambos tipos.
+ * Si un Pokémon es de tipo MULTITIPO, aparecerá en todas las secciones.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -165,16 +174,20 @@ fun PokedexStickyHeader(){
     val allTypes = TIPO.entries.filter { it != TIPO.MULTITIPO }
 val multitipoPokemon = listaPokemon.filter { it.tipo1 == TIPO.MULTITIPO}
 
+    // Agrupa los Pokémon por tipo.
+    // Cada tipo se asocia con una lista de Pokémon que coincide con ese tipo (ya sea tipo1 o tipo2).
+    // Además, los Pokémon de tipo MULTITIPO se añaden a cada lista.
+    // El mapa resultante se ordena alfabéticamente por el nombre del tipo.
     val pokemonByTipo = allTypes.associateWith { tipo ->
         listaPokemon.filter { pokemon ->
             pokemon.tipo1 == tipo || pokemon.tipo2 == tipo
         } + multitipoPokemon
     }.toSortedMap(compareBy { it.name })
 
-
+    // Muestra la lista de Pokémon con encabezados fijos (sticky headers) para cada tipo.
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)){
         pokemonByTipo.forEach { (tipoEnum, pokemonList) ->
-            // No mostrar el header si la lista está vacía (aunque con Multitipo, no debería pasar)
+            // No muestra el encabezado si la lista de Pokémon para ese tipo está vacía.
             if (pokemonList.isEmpty()) return@forEach
 
             val tipo = tipoEnum.name
@@ -242,6 +255,7 @@ val multitipoPokemon = listaPokemon.filter { it.tipo1 == TIPO.MULTITIPO}
                         .padding(8.dp)
                         .fillMaxWidth()
                 )
+            // Muestra las tarjetas de los Pokémon para el tipo actual.
             }
             items(pokemonList.distinct()) { pokemonItem ->
                 PokemonCard(pokemon = pokemonItem)
@@ -251,12 +265,14 @@ val multitipoPokemon = listaPokemon.filter { it.tipo1 == TIPO.MULTITIPO}
 }
 
 /**
- * Aqui se definen las cards de los pokemon
+ * Define la apariencia de una tarjeta de Pokémon en formato de fila (horizontal).
+ * Muestra un diálogo con la descripción del Pokémon al hacer clic.
  */
 @Composable
 fun PokemonCard(pokemon: Pokemon) {
     var showDialog by remember { mutableStateOf(false) }
 
+    // Muestra un AlertDialog si showDialog es verdadero.
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -270,6 +286,7 @@ fun PokemonCard(pokemon: Pokemon) {
         )
     }
 
+    // Diseño de la tarjeta del Pokémon.
     Card(modifier = Modifier
         .fillMaxWidth()
         .padding(8.dp)
@@ -300,10 +317,15 @@ fun PokemonCard(pokemon: Pokemon) {
     }
 }
 
+/**
+ * Define la apariencia de una tarjeta de Pokémon en formato de columna (vertical), usada en la vista de Grid.
+ * Muestra un diálogo con la descripción del Pokémon al hacer clic.
+ */
 @Composable
 fun PokemonCardVertical(pokemon: Pokemon) {
     var showDialog by remember { mutableStateOf(false) }
 
+    // Muestra un AlertDialog si showDialog es verdadero.
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -317,6 +339,7 @@ fun PokemonCardVertical(pokemon: Pokemon) {
         )
     }
 
+    // Diseño de la tarjeta del Pokémon en formato vertical.
     Card(modifier = Modifier
         .fillMaxWidth()
         .padding(8.dp)
