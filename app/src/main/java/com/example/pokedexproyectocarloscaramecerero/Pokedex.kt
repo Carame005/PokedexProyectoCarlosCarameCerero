@@ -163,7 +163,7 @@ fun PokedexGrid(){
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PokedexStickyHeader(){
-    val allTypes = TIPO.values().filter { it != TIPO.MULTITIPO }
+    val allTypes = TIPO.entries.filter { it != TIPO.MULTITIPO }
 val multitipoPokemon = listaPokemon.filter { it.tipo1 == TIPO.MULTITIPO}
 
     val pokemonByTipo = allTypes.associateWith { tipo ->
@@ -285,7 +285,7 @@ fun PokemonCard(pokemon: Pokemon) {
             Box(
                 modifier = Modifier
                     .padding(start = 8.dp)
-                    .background(Color(0xFFADD8E6)) // Light Blue
+                    .background(Color(0xFFA6E9FF)) // Light Blue
                     .border(BorderStroke(2.dp, Color.Black))
                     .padding(8.dp)
                     .fillMaxWidth()
@@ -332,7 +332,7 @@ fun PokemonCardVertical(pokemon: Pokemon) {
             Box(
                 modifier = Modifier
                     .padding(start = 8.dp)
-                    .background(Color(0xFFADD8E6)) // Light Blue
+                    .background(Color(0xFFA6E9FF)) // Light Blue
                     .border(BorderStroke(2.dp, Color.Black))
                     .padding(8.dp)
                     .fillMaxWidth()
