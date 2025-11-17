@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.text.font.FontWeight
@@ -59,79 +60,91 @@ fun Pokedex() {
         PokedexView.STICKY -> Color(0xFF8000FF) // morado
     }
 
-    Column(Modifier.fillMaxSize().safeDrawingPadding() ) {
+    // ⭐ Envolvemos TODO en un Box con la imagen de fondo
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
+    ) {
 
-        // TOP BAR DINÁMICO
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .background(topBarColor)
-                .border(BorderStroke(4.dp, Color.Black)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "POKEDEX",
-                color = Color.Yellow,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                fontStyle = Italic
-            )
-        }
+        // ⭐ FONDO (siempre fijo)
+        Image(
+            painter = painterResource(id = R.drawable.fondo),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
 
-        // CONTENIDO DINÁMICO SEGÚN LA VISTA
-        Box(Modifier.weight(1f)) {
-            when (selectedView) {
-                PokedexView.COLUMN -> PokedexColumn()
-                PokedexView.GRID -> PokedexGrid()
-                PokedexView.STICKY -> PokedexStickyHeader()
-            }
-        }
+        // ⭐ INTERFAZ (encima del fondo)
+        Column(Modifier.fillMaxSize()) {
 
-        // BOTTOM BAR
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .background(Color.White)
-                .border(BorderStroke(4.dp, Color.Black)),
-        ){
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+            // TOP BAR DINÁMICO
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(topBarColor)
+                    .border(BorderStroke(4.dp, Color.Black)),
+                contentAlignment = Alignment.Center
             ) {
-
-                // Botón – LazyColumn (ROJO)
-                Image(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clickable { selectedView = PokedexView.COLUMN },
-                    painter = painterResource(id = R.drawable.pokeball),
-                    contentDescription = "Pokeball",
+                Text(
+                    text = "POKEDEX",
+                    color = Color.Yellow,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontStyle = Italic
                 )
+            }
 
-                // Botón – Grid (AZUL)
-                Image(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clickable { selectedView = PokedexView.GRID },
-                    painter = painterResource(id = R.drawable.superball),
-                    contentDescription = "SuperBall",
-                )
+            // CONTENIDO DINÁMICO
+            Box(Modifier.weight(1f)) {
+                when (selectedView) {
+                    PokedexView.COLUMN -> PokedexColumn()
+                    PokedexView.GRID -> PokedexGrid()
+                    PokedexView.STICKY -> PokedexStickyHeader()
+                }
+            }
 
-                // Botón – StickyHeader (MORADO)
-                Image(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clickable { selectedView = PokedexView.STICKY },
-                    painter = painterResource(id = R.drawable.masterball),
-                    contentDescription = "MasterBall",
-                )
+            // BOTTOM BAR
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .background(Color.White)
+                    .border(BorderStroke(4.dp, Color.Black)),
+            ){
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+                ) {
+                    Image(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clickable { selectedView = PokedexView.COLUMN },
+                        painter = painterResource(id = R.drawable.pokeball),
+                        contentDescription = "Pokeball",
+                    )
+                    Image(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clickable { selectedView = PokedexView.GRID },
+                        painter = painterResource(id = R.drawable.superball),
+                        contentDescription = "SuperBall",
+                    )
+                    Image(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clickable { selectedView = PokedexView.STICKY },
+                        painter = painterResource(id = R.drawable.masterball),
+                        contentDescription = "MasterBall",
+                    )
+                }
             }
         }
     }
 }
+
 
 
 /**
@@ -218,10 +231,10 @@ val multitipoPokemon = listaPokemon.filter { it.tipo1 == TIPO.MULTITIPO}
                                     Color(0xFFFF1AB3)
                                 }
                                 TIPO.SINIESTRO -> {
-                                    Color(0xFF382532)
+                                    Color(0xFFdad7cd)
                                 }
                                 TIPO.FANTASMA -> {
-                                    Color(0xFF4700A9)
+                                    Color(0xFFcdb4db)
                                 }
                                 TIPO.ACERO -> {
                                     Color(0xFFBCADB5)
