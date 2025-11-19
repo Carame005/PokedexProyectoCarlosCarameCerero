@@ -60,14 +60,14 @@ fun Pokedex() {
         PokedexView.STICKY -> Color(0xFF8000FF) // morado
     }
 
-    // ⭐ Envolvemos TODO en un Box con la imagen de fondo
+    //  Envolvemos TODO en un Box con la imagen de fondo
     Box(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
 
-        // ⭐ FONDO (siempre fijo)
+        //  FONDO (siempre fijo)
         Image(
             painter = painterResource(id = R.drawable.fondo),
             contentDescription = null,
@@ -75,7 +75,7 @@ fun Pokedex() {
             contentScale = ContentScale.Crop
         )
 
-        // ⭐ INTERFAZ (encima del fondo)
+        //  INTERFAZ (encima del fondo)
         Column(Modifier.fillMaxSize()) {
 
             // TOP BAR DINÁMICO
@@ -184,10 +184,13 @@ fun PokedexStickyHeader(){
     val allTypes = TIPO.entries.filter { it != TIPO.MULTITIPO }
 val multitipoPokemon = listaPokemon.filter { it.tipo1 == TIPO.MULTITIPO}
 
-    // Agrupa los Pokémon por tipo.
-    // Cada tipo se asocia con una lista de Pokémon que coincide con ese tipo (ya sea tipo1 o tipo2).
-    // Además, los Pokémon de tipo MULTITIPO se añaden a cada lista.
-    // El mapa resultante se ordena alfabéticamente por el nombre del tipo.
+    /**
+     * Agrupa los Pokémon por tipo.
+     * Cada tipo se asocia con una lista de Pokémon que coincide con ese tipo (ya sea tipo1 o tipo2).
+     * Además, los Pokémon de tipo MULTITIPO se añaden a cada lista.
+     * El mapa resultante se ordena alfabéticamente por el nombre del tipo.
+     */
+
     val pokemonByTipo = allTypes.associateWith { tipo ->
         listaPokemon.filter { pokemon ->
             pokemon.tipo1 == tipo || pokemon.tipo2 == tipo
@@ -317,10 +320,10 @@ fun PokemonCard(pokemon: Pokemon) {
                     .fillMaxWidth()
             ) {
                 Column {
-                    Text(text = "Nombre: ${pokemon.nombre}", fontWeight = FontWeight.Bold)
-                    Text(text = "Tipo 1: ${pokemon.tipo1.name}")
-                    pokemon.tipo2?.let { Text(text = "Tipo 2: ${it.name}") }
-                    Text(text = "Habilidades: ${pokemon.habilidades.joinToString()}")
+                    Text(text = pokemon.nombre, fontWeight = FontWeight.Bold)
+                    Text(text = pokemon.tipo1.desc)
+                    pokemon.tipo2?.let { Text(text = it.desc) }
+                    Text(text = pokemon.habilidades.joinToString())
                 }
             }
         }
@@ -370,16 +373,19 @@ fun PokemonCardVertical(pokemon: Pokemon) {
                     .fillMaxWidth()
             ) {
                 Column {
-                    Text(text = "Nombre: ${pokemon.nombre}", fontWeight = FontWeight.Bold)
-                    Text(text = "Tipo 1: ${pokemon.tipo1.name}")
-                    pokemon.tipo2?.let { Text(text = "Tipo 2: ${it.name}") }
-                    Text(text = "Habilidades: ${pokemon.habilidades.joinToString()}")
+                    Text(text = pokemon.nombre, fontWeight = FontWeight.Bold)
+                    Text(text = pokemon.tipo1.desc)
+                    pokemon.tipo2?.let { Text(text = it.desc) }
+                    Text(text = pokemon.habilidades.joinToString())
                 }
             }
         }
     }
 }
 
+/**
+ * Preview de la pagina principal
+ */
 @Preview
 @Composable
 fun PokedexPreview() {

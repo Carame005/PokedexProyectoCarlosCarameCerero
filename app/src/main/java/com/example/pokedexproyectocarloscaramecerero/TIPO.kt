@@ -1,5 +1,8 @@
 package com.example.pokedexproyectocarloscaramecerero
 
+/**
+ * Enum class de tipos de Pokémon.
+ */
 enum class TIPO( val desc : String) {
     AGUA("Agua"),
     FUEGO("Fuego"),

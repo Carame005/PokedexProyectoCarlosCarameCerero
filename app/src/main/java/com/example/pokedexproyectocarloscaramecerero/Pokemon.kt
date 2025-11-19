@@ -1,5 +1,8 @@
 package com.example.pokedexproyectocarloscaramecerero
 
+/**
+ * Data class que define un Pokémon.
+ */
 data class Pokemon(
     val nombre: String,
     val tipo1: TIPO,
