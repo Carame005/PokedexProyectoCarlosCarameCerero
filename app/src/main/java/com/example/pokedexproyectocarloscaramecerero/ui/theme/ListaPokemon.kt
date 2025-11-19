@@ -4,6 +4,9 @@ import com.example.pokedexproyectocarloscaramecerero.R
 import com.example.pokedexproyectocarloscaramecerero.Pokemon
 import com.example.pokedexproyectocarloscaramecerero.TIPO
 
+/**
+ * Lista de los pokemon usando la dataclass
+ */
 val listaPokemon = listOf<Pokemon>(
     Pokemon(
         "Bulbasaur", TIPO.PLANTA, TIPO.VENENO,
