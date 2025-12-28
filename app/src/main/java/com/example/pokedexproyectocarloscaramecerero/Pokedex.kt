@@ -25,6 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,13 +52,22 @@ import com.example.pokedexproyectocarloscaramecerero.ui.theme.listaPokemon
 fun Pokedex() {
 
     // ESTADO QUE CAMBIA LA VISTA
-    var selectedView by remember { mutableStateOf(PokedexView.COLUMN) }
+    // Al iniciar la app, mostramos la vista de login
+    var selectedView by remember { mutableStateOf(PokedexView.LOGIN) }
+
+    // Estado del usuario logueado (null = no hay sesión)
+    var loggedUser by remember { mutableStateOf<Usuario?>(null) }
+
+    // Estado para mostrar el diálogo cuando se intenta acceder al admin sin permisos
+    var showAccessDeniedDialog by remember { mutableStateOf(false) }
 
     // ESTADO PARA EL COLOR DEL TOPBAR
     val topBarColor = when(selectedView) {
         PokedexView.COLUMN -> Color.Red
         PokedexView.GRID -> Color.Blue
         PokedexView.STICKY -> Color(0xFF8000FF) // morado
+        PokedexView.LOGIN -> Color.Green
+        PokedexView.ADMIN -> Color.Yellow
     }
 
     //  Envolvemos TODO en un Box con la imagen de fondo
@@ -75,7 +85,18 @@ fun Pokedex() {
             contentScale = ContentScale.Crop
         )
 
-        //  INTERFAZ (encima del fondo)
+        // Si estamos en LOGIN mostramos solo el login (pantalla independiente)
+        if (selectedView == PokedexView.LOGIN) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Login(onLogin = { usuario ->
+                    loggedUser = usuario
+                    selectedView = if (usuario.admin) PokedexView.ADMIN else PokedexView.COLUMN
+                })
+            }
+            return
+        }
+
+        //  INTERFAZ (encima del fondo) - sólo se muestra cuando no estamos en LOGIN
         Column(Modifier.fillMaxSize()) {
 
             // TOP BAR DINÁMICO
@@ -102,7 +123,27 @@ fun Pokedex() {
                     PokedexView.COLUMN -> PokedexColumn()
                     PokedexView.GRID -> PokedexGrid()
                     PokedexView.STICKY -> PokedexStickyHeader()
+                    PokedexView.ADMIN -> Admin(currentUser = loggedUser, onLogout = {
+                        // Cerrar sesión y volver a la vista de LOGIN (pantalla independiente)
+                        loggedUser = null
+                        selectedView = PokedexView.LOGIN
+                    })
+                    else -> { /* no aplica */ }
                 }
+            }
+
+            // Dialogo global para acceso denegado (se muestra cuando se pulsa el icono admin sin permisos)
+            if (showAccessDeniedDialog) {
+                AlertDialog(
+                    onDismissRequest = { showAccessDeniedDialog = false },
+                    title = { Text("Acceso denegado") },
+                    text = { Text("No tienes permisos de administrador.") },
+                    confirmButton = {
+                        Button(onClick = { showAccessDeniedDialog = false }) {
+                            Text("Aceptar")
+                        }
+                    }
+                )
             }
 
             // BOTTOM BAR
@@ -138,6 +179,21 @@ fun Pokedex() {
                             .clickable { selectedView = PokedexView.STICKY },
                         painter = painterResource(id = R.drawable.masterball),
                         contentDescription = "MasterBall",
+                    )
+                    // Imagen placeholder para acceder al panel de admin
+                    Image(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clickable {
+                                // Si hay usuario y es admin, navegar; si no, mostrar dialogo de acceso denegado
+                                if (loggedUser != null && loggedUser!!.admin) {
+                                    selectedView = PokedexView.ADMIN
+                                } else {
+                                    showAccessDeniedDialog = true
+                                }
+                            },
+                        painter = painterResource(id = R.drawable.pc),
+                        contentDescription = "Admin",
                     )
                 }
             }
@@ -384,6 +440,172 @@ fun PokemonCardVertical(pokemon: Pokemon) {
 }
 
 /**
+ * Login que contará con tres campos: usuario,correo y contraseña con verificacion de datos y manejo de errores
+ * una vez iniciado sesion se abrirá la vista de la pokedex y dependiendo de si está registrado cómo admin este
+ * tendrá permisos (admin = true)
+ *
+ * onLogin: callback que recibe el Usuario creado al iniciar sesión correctamente.
+ */
+@Composable
+fun Login(onLogin: (Usuario) -> Unit) {
+    // Campos del formulario
+    var usuario by remember { mutableStateOf("") }
+    var correo by remember { mutableStateOf("") }
+    var contrasena by remember { mutableStateOf("") }
+
+    // Mensaje de error / confirmación
+    var errorMsg by remember { mutableStateOf<String?>(null) }
+
+    // Dialogo de confirmación (opcional)
+    var showSuccess by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+        Text(text = "Iniciar sesión", fontWeight = FontWeight.Bold)
+
+        OutlinedTextField(
+            value = usuario,
+            onValueChange = { usuario = it },
+            label = { Text("Usuario") },
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+        )
+
+        OutlinedTextField(
+            value = correo,
+            onValueChange = { correo = it },
+            label = { Text("Correo") },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        )
+
+        OutlinedTextField(
+            value = contrasena,
+            onValueChange = { contrasena = it },
+            label = { Text("Contraseña") },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        )
+
+        errorMsg?.let { Text(text = it, color = Color.Red, modifier = Modifier.padding(top = 8.dp)) }
+
+        Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = {
+                // Validaciones básicas
+                when {
+                    usuario.isBlank() -> errorMsg = "El usuario no puede estar vacío"
+                    correo.isBlank() || !correo.contains("@") -> errorMsg = "Introduce un correo válido"
+                    contrasena.length < 4 -> errorMsg = "La contraseña debe tener al menos 4 caracteres"
+                    else -> {
+                        errorMsg = null
+                        // Credenciales de ejemplo para administrador (hardcoded)
+                        val esAdmin = correo.trim().lowercase() == "admin@pokedex.com" && contrasena == "admin123"
+                        val nuevoUsuario = Usuario(usuario = usuario.trim(), correo = correo.trim(), contrasena = contrasena, admin = esAdmin)
+                        showSuccess = true
+                        // Llamar al callback para notificar inicio de sesión
+                        onLogin(nuevoUsuario)
+                    }
+                }
+            }) {
+                Text("Iniciar sesión")
+            }
+
+            Button(onClick = {
+                // Limpiar campos
+                usuario = ""
+                correo = ""
+                contrasena = ""
+                errorMsg = null
+            }) {
+                Text("Limpiar")
+            }
+        }
+
+        if (showSuccess) {
+            AlertDialog(
+                onDismissRequest = { showSuccess = false },
+                title = { Text("Sesión iniciada") },
+                text = { Text("Has iniciado sesión como $usuario") },
+                confirmButton = {
+                    Button(onClick = { showSuccess = false }) {
+                        Text("Aceptar")
+                    }
+                }
+            )
+        }
+    }
+}
+
+/***
+ * Vista que te permite editar/crear una entrada en la pokedex, accesible unicamente por un usuario con permisos de admin
+ *
+ * currentUser: usuario que intenta acceder
+ * onLogout: callback para cerrar sesión
+ */
+@Composable
+fun Admin(currentUser: Usuario?, onLogout: () -> Unit) {
+    // Si no hay usuario o no es admin, mostramos mensaje
+    if (currentUser == null || !currentUser.admin) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center) {
+            Text("Acceso denegado. Se requiere permisos de administrador.", color = Color.Red)
+            // Botón para volver al login
+            Button(onClick = onLogout, modifier = Modifier.padding(top = 12.dp)) {
+                Text("Ir a Login")
+            }
+        }
+        return
+    }
+
+    // Campos para crear/editar entrada (no persistente en lista global por simplicidad)
+    var nombre by remember { mutableStateOf("") }
+    var tipo by remember { mutableStateOf("") }
+    var descripcion by remember { mutableStateOf("") }
+    var showDialog by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
+        Text(text = "Panel de administración", fontWeight = FontWeight.Bold)
+        Text(text = "Usuario: ${currentUser.usuario}", modifier = Modifier.padding(top = 8.dp))
+
+        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre del Pokémon") }, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+        OutlinedTextField(value = tipo, onValueChange = { tipo = it }, label = { Text("Tipo (texto)") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+        OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+        Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = {
+                // Acción de "guardar" — aquí no se modifica lista global, sólo mostramos confirmación
+                if (nombre.isNotBlank()) {
+                    showDialog = true
+                    nombre = ""
+                    tipo = ""
+                    descripcion = ""
+                }
+            }) {
+                Text("Guardar entrada")
+            }
+        }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Entrada creada") },
+                text = { Text("Se ha creado la entrada (no persistente en esta demo).") },
+                confirmButton = {
+                    Button(onClick = { showDialog = false }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+    }
+}
+
+
+/**
  * Preview de la pagina principal
  */
 @Preview
@@ -391,4 +613,3 @@ fun PokemonCardVertical(pokemon: Pokemon) {
 fun PokedexPreview() {
     Pokedex()
 }
-
