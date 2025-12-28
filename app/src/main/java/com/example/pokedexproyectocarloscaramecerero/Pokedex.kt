@@ -491,7 +491,7 @@ fun Login(onLogin: (Usuario) -> Unit) {
 
         Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
-                // Validaciones básicas
+                // Validaciones bássicas
                 when {
                     usuario.isBlank() -> errorMsg = "El usuario no puede estar vacío"
                     correo.isBlank() || !correo.contains("@") -> errorMsg = "Introduce un correo válido"
