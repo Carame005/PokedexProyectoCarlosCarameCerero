@@ -21,12 +21,14 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,8 +37,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -464,23 +470,30 @@ fun Login(onLogin: (Usuario) -> Unit) {
         .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-        Text(text = "Iniciar sesión", fontWeight = FontWeight.Bold)
+        Text(
+            text = "POKEDEX",
+            color = Color.Black,
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            fontStyle = Italic
+        
+        )
 
-        OutlinedTextField(
+        TextField(
             value = usuario,
             onValueChange = { usuario = it },
             label = { Text("Usuario") },
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
         )
 
-        OutlinedTextField(
+        TextField(
             value = correo,
             onValueChange = { correo = it },
             label = { Text("Correo") },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
         )
 
-        OutlinedTextField(
+        TextField(
             value = contrasena,
             onValueChange = { contrasena = it },
             label = { Text("Contraseña") },
@@ -490,35 +503,28 @@ fun Login(onLogin: (Usuario) -> Unit) {
         errorMsg?.let { Text(text = it, color = Color.Red, modifier = Modifier.padding(top = 8.dp)) }
 
         Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = {
-                // Validaciones bássicas
-                when {
-                    usuario.isBlank() -> errorMsg = "El usuario no puede estar vacío"
-                    correo.isBlank() || !correo.contains("@") -> errorMsg = "Introduce un correo válido"
-                    contrasena.length < 4 -> errorMsg = "La contraseña debe tener al menos 4 caracteres"
-                    else -> {
-                        errorMsg = null
-                        // Credenciales de ejemplo para administrador (hardcoded)
-                        val esAdmin = correo.trim().lowercase() == "admin@pokedex.com" && contrasena == "admin123"
-                        val nuevoUsuario = Usuario(usuario = usuario.trim(), correo = correo.trim(), contrasena = contrasena, admin = esAdmin)
-                        showSuccess = true
-                        // Llamar al callback para notificar inicio de sesión
-                        onLogin(nuevoUsuario)
-                    }
-                }
-            }) {
-                Text("Iniciar sesión")
-            }
 
-            Button(onClick = {
-                // Limpiar campos
-                usuario = ""
-                correo = ""
-                contrasena = ""
-                errorMsg = null
-            }) {
-                Text("Limpiar")
-            }
+            Image(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clickable {
+                        // Validaciones bássicas
+                        when {
+                            usuario.isBlank() -> errorMsg = "El usuario no puede estar vacío"
+                            correo.isBlank() || !correo.contains("@") -> errorMsg = "Introduce un correo válido"
+                            contrasena.length < 4 -> errorMsg = "La contraseña debe tener al menos 4 caracteres"
+                            else -> {
+                                errorMsg = null
+                                // Credenciales de ejemplo para administrador (hardcoded)
+                                val esAdmin = correo.trim().lowercase() == "admin@pokedex.com" && contrasena == "admin123"
+                                val nuevoUsuario = Usuario(usuario = usuario.trim(), correo = correo.trim(), contrasena = contrasena, admin = esAdmin)
+                                showSuccess = true
+                                // Llamar al callback para notificar inicio de sesión
+                                onLogin(nuevoUsuario)
+                            } }},
+                painter = painterResource(id = R.drawable.ball),
+                contentDescription = "SuperBall",
+            )
         }
 
         if (showSuccess) {
