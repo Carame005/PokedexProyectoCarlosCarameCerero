@@ -578,9 +578,9 @@ fun Admin(currentUser: Usuario?, onLogout: () -> Unit) {
         Text(text = "Panel de administración", fontWeight = FontWeight.Bold)
         Text(text = "Usuario: ${currentUser.usuario}", modifier = Modifier.padding(top = 8.dp))
 
-        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre del Pokémon") }, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
-        OutlinedTextField(value = tipo, onValueChange = { tipo = it }, label = { Text("Tipo (texto)") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-        OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+        TextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre del Pokémon") }, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+        TextField(value = tipo, onValueChange = { tipo = it }, label = { Text("Tipo (texto)") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+        TextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
         Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
                 // Acción de "guardar" — aquí no se modifica lista global, sólo mostramos confirmación
