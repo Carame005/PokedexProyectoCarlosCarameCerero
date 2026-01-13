@@ -1,5 +1,6 @@
 package com.example.pokedexproyectocarloscaramecerero
 
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -49,6 +50,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pokedexproyectocarloscaramecerero.ui.theme.listaPokemon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
+
+// DataStore delegate y keys (añadidos)
+val Context.dataStore by preferencesDataStore(name = "user_prefs")
+private val USERNAME_KEY = stringPreferencesKey("username")
+private val EMAIL_KEY = stringPreferencesKey("email")
+private val IS_ADMIN_KEY = booleanPreferencesKey("is_admin")
 
 @Composable
 /**
@@ -61,11 +83,47 @@ fun Pokedex() {
     // Al iniciar la app, mostramos la vista de login
     var selectedView by remember { mutableStateOf(PokedexView.LOGIN) }
 
+    // Contexto y scope para persistencia
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Flow que lee el usuario guardado en DataStore (si existe)
+    val savedUserFlow = context.dataStore.data.map { prefs ->
+        val u = prefs[USERNAME_KEY]
+        val e = prefs[EMAIL_KEY]
+        val a = prefs[IS_ADMIN_KEY] ?: false
+        if (u != null && e != null) Usuario(usuario = u, correo = e, contrasena = "", admin = a) else null
+    }
+    val savedUser by savedUserFlow.collectAsState(initial = null)
+
     // Estado del usuario logueado (null = no hay sesión)
     var loggedUser by remember { mutableStateOf<Usuario?>(null) }
 
-    // Estado para mostrar el diálogo cuando se intenta acceder al admin sin permisos
-    var showAccessDeniedDialog by remember { mutableStateOf(false) }
+    // Restaurar sesión si había datos guardados
+    LaunchedEffect(savedUser) {
+        if (savedUser != null) {
+            loggedUser = savedUser
+            selectedView = if (savedUser!!.admin) PokedexView.ADMIN else PokedexView.COLUMN
+        }
+    }
+
+    // Helpers para guardar/limpiar sesión en DataStore
+    fun persistUser(usuario: Usuario) {
+        coroutineScope.launch {
+            context.dataStore.edit { prefs ->
+                prefs[USERNAME_KEY] = usuario.usuario
+                prefs[EMAIL_KEY] = usuario.correo
+                prefs[IS_ADMIN_KEY] = usuario.admin
+            }
+        }
+    }
+    fun clearPersistedUser() {
+        coroutineScope.launch {
+            context.dataStore.edit { prefs ->
+                prefs.clear()
+            }
+        }
+    }
 
     // ESTADO PARA EL COLOR DEL TOPBAR
     val topBarColor = when(selectedView) {
@@ -95,7 +153,9 @@ fun Pokedex() {
         if (selectedView == PokedexView.LOGIN) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Login(onLogin = { usuario ->
+                    // Guardar en estado y persistir
                     loggedUser = usuario
+                    persistUser(usuario)
                     selectedView = if (usuario.admin) PokedexView.ADMIN else PokedexView.COLUMN
                 })
             }
@@ -105,22 +165,51 @@ fun Pokedex() {
         //  INTERFAZ (encima del fondo) - sólo se muestra cuando no estamos en LOGIN
         Column(Modifier.fillMaxSize()) {
 
-            // TOP BAR DINÁMICO
-            Box(
+            // TOP BAR DINÁMICO con botón de logout cuando hay sesión
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
                     .background(topBarColor)
                     .border(BorderStroke(4.dp, Color.Black)),
-                contentAlignment = Alignment.Center
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "POKEDEX",
-                    color = Color.Yellow,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontStyle = Italic
-                )
+                // Zona fija izquierda para el icono (mantiene espacio aunque no haya sesión)
+                Box(modifier = Modifier.size(56.dp)) {
+                    if (loggedUser != null) {
+                        IconButton(
+                            onClick = {
+                                // limpiar estado y persistencia, volver a login
+                                loggedUser = null
+                                clearPersistedUser()
+                                selectedView = PokedexView.LOGIN
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .padding(start = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ExitToApp,
+                                contentDescription = "Cerrar sesión",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+
+                // Título centrado usando weight para evitar superposición
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "POKEDEX",
+                        color = Color.Yellow,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontStyle = Italic
+                    )
+                }
+
+                // Zona fija derecha para balancear el espacio y mantener el título centrado
+                Box(modifier = Modifier.size(56.dp)) { /* espacio para balance */ }
             }
 
             // CONTENIDO DINÁMICO
@@ -137,6 +226,9 @@ fun Pokedex() {
                     else -> { /* no aplica */ }
                 }
             }
+
+            var showAccessDeniedDialog by remember { mutableStateOf(false) }
+
 
             // Dialogo global para acceso denegado (se muestra cuando se pulsa el icono admin sin permisos)
             if (showAccessDeniedDialog) {
@@ -459,6 +551,9 @@ fun Login(onLogin: (Usuario) -> Unit) {
     var correo by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
 
+    // Switch para indicar si eres admin (el usuario decide)
+    var esAdminSwitch by remember { mutableStateOf(false) }
+
     // Mensaje de error / confirmación
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
@@ -469,36 +564,72 @@ fun Login(onLogin: (Usuario) -> Unit) {
         .fillMaxSize()
         .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+    ) {
         Text(
             text = "POKEDEX",
             color = Color.Black,
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             fontStyle = Italic
-        
         )
 
+        // Campos con fondo blanco
         TextField(
             value = usuario,
             onValueChange = { usuario = it },
             label = { Text("Usuario") },
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color.White,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black,
+                focusedLabelColor = Color.Gray,
+                unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.Black
+            )
         )
+
 
         TextField(
             value = correo,
             onValueChange = { correo = it },
             label = { Text("Correo") },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
         )
 
         TextField(
             value = contrasena,
             onValueChange = { contrasena = it },
             label = { Text("Contraseña") },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
         )
+
+
+        // Switch para marcar admin
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
+            Text(text = "Acceder como admin", modifier = Modifier.padding(end = 8.dp))
+            Switch(checked = esAdminSwitch, onCheckedChange = { esAdminSwitch = it })
+        }
 
         errorMsg?.let { Text(text = it, color = Color.Red, modifier = Modifier.padding(top = 8.dp)) }
 
@@ -515,13 +646,14 @@ fun Login(onLogin: (Usuario) -> Unit) {
                             contrasena.length < 4 -> errorMsg = "La contraseña debe tener al menos 4 caracteres"
                             else -> {
                                 errorMsg = null
-                                // Credenciales de ejemplo para administrador (hardcoded)
-                                val esAdmin = correo.trim().lowercase() == "admin@pokedex.com" && contrasena == "admin123"
-                                val nuevoUsuario = Usuario(usuario = usuario.trim(), correo = correo.trim(), contrasena = contrasena, admin = esAdmin)
+                                // Usar el valor del switch para admin
+                                val nuevoUsuario = Usuario(usuario = usuario.trim(), correo = correo.trim(), contrasena = contrasena, admin = esAdminSwitch)
                                 showSuccess = true
                                 // Llamar al callback para notificar inicio de sesión
                                 onLogin(nuevoUsuario)
-                            } }},
+                            }
+                        }
+                    },
                 painter = painterResource(id = R.drawable.ball),
                 contentDescription = "SuperBall",
             )
